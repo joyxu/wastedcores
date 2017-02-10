@@ -41,7 +41,7 @@ index a10494a..fd0204e 100644
  #define task_stack_end_corrupted(task) \
  		(*(end_of_stack(task)) != STACK_END_MAGIC)
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 56b7d4b..0c4f4ca 100644
+index 56b7d4b..58b0e27 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
 @@ -36,6 +36,21 @@
@@ -228,7 +228,7 @@ index 56b7d4b..0c4f4ca 100644
 +      return false; // We don't want to consider kernel threads
 +   if(p->nr_cpus_allowed != nr_cpu_ids)
 +      return false; // The task is tasksetted, computations get extra complex so ignore it
-+   if(p->se.avg.load_avg_contrib < 950)
++   if(p->se.avg.load_avg < 950)
 +      return false; // we are only interrested in high CPU usage tasks (950 - 1024) because other tasks are likely to not be delayed
 +   if(tick_time && p->sched_info.olddelay == tick_time && p->sched_info.delayedload_count)
 +      return true;
@@ -245,7 +245,7 @@ index 56b7d4b..0c4f4ca 100644
 +   unsigned long now64;
 +   unsigned long min_delay;
 +
-+   do_posix_clock_monotonic_gettime(&now);
++   ktime_get_ts(&now);
 +   now64 = now.tv_sec*ONE_SECOND + now.tv_nsec;
 +
 +   /* Find the delay of all "significant" task (not tasksetted, high cpu usage) */
@@ -256,7 +256,7 @@ index 56b7d4b..0c4f4ca 100644
 +         total_delay += p->sched_info.delayedload;
 +         nb_threads++;
 +         if(debug_invariants)
-+            printk("Thread %s avgdelay %ld/%ld = %ld vruntime %ld %ld %ld load %ld %ld %ld\n", p->comm, (long)p->sched_info.delayedload, (long)p->sched_info.delayedload_count, (long)(p->sched_info.delayedload / p->sched_info.delayedload_count), (long)p->se.sum_exec_runtime, (long)p->se.vruntime, (long)p->se.prev_sum_exec_runtime, (long)task_h_load(p), (long)p->se.load.weight, (long)p->se.avg.load_avg_contrib);
++            printk("Thread %s avgdelay %ld/%ld = %ld vruntime %ld %ld %ld load %ld %ld %ld\n", p->comm, (long)p->sched_info.delayedload, (long)p->sched_info.delayedload_count, (long)(p->sched_info.delayedload / p->sched_info.delayedload_count), (long)p->se.sum_exec_runtime, (long)p->se.vruntime, (long)p->se.prev_sum_exec_runtime, (long)task_h_load(p), (long)p->se.load.weight, (long)p->se.avg.load_avg);
 +      }
 +   } while_each_thread(g, p);
 +
@@ -355,9 +355,9 @@ index 56b7d4b..0c4f4ca 100644
 +
 +      list_for_each_entry_safe(p, n, &rq->cfs_tasks, se.group_node) {
 +         r->bug_report_size += sprintf(r->bug_report + r->bug_report_size,
-+               "#\tThread %s - avg_load_contrib %ld - final load %ld (weight %ld)\n",
++               "#\tThread %s - avg_load %ld - final load %ld (weight %ld)\n",
 +               p->comm,
-+               (long)p->se.avg.load_avg_contrib,
++               (long)p->se.avg.load_avg,
 +               (long)task_h_load(p),
 +               (long)p->se.load.weight);
 +      }
