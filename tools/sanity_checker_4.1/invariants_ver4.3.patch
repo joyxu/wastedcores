@@ -41,7 +41,7 @@ index b7b9501..9ed1fff 100644
  #define task_stack_end_corrupted(task) \
  		(*(end_of_stack(task)) != STACK_END_MAGIC)
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 9a5e60f..f642109 100644
+index 9a5e60f..fa73f75 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
 @@ -36,6 +36,21 @@
@@ -245,7 +245,7 @@ index 9a5e60f..f642109 100644
 +   unsigned long now64;
 +   unsigned long min_delay;
 +
-+   do_posix_clock_monotonic_gettime(&now);
++   ktime_get_ts(&now);
 +   now64 = now.tv_sec*ONE_SECOND + now.tv_nsec;
 +
 +   /* Find the delay of all "significant" task (not tasksetted, high cpu usage) */
