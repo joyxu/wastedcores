@@ -41,7 +41,7 @@ index b7b9501..9ed1fff 100644
  #define task_stack_end_corrupted(task) \
  		(*(end_of_stack(task)) != STACK_END_MAGIC)
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 9a5e60f..6baa655 100644
+index 9a5e60f..28bb28a 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
 @@ -36,6 +36,21 @@
@@ -228,7 +228,7 @@ index 9a5e60f..6baa655 100644
 +      return false; // We don't want to consider kernel threads
 +   if(p->nr_cpus_allowed != nr_cpu_ids)
 +      return false; // The task is tasksetted, computations get extra complex so ignore it
-+   if(p->se.avg.load_avg_contrib < 950)
++   if(p->se.avg.load_avg < 950)
 +      return false; // we are only interrested in high CPU usage tasks (950 - 1024) because other tasks are likely to not be delayed
 +   if(tick_time && p->sched_info.olddelay == tick_time && p->sched_info.delayedload_count)
 +      return true;
