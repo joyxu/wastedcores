@@ -41,7 +41,7 @@ index b7b9501..9ed1fff 100644
  #define task_stack_end_corrupted(task) \
  		(*(end_of_stack(task)) != STACK_END_MAGIC)
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 9a5e60f..fa73f75 100644
+index 9a5e60f..6baa655 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
 @@ -36,6 +36,21 @@
@@ -256,7 +256,7 @@ index 9a5e60f..fa73f75 100644
 +         total_delay += p->sched_info.delayedload;
 +         nb_threads++;
 +         if(debug_invariants)
-+            printk("Thread %s avgdelay %ld/%ld = %ld vruntime %ld %ld %ld load %ld %ld %ld\n", p->comm, (long)p->sched_info.delayedload, (long)p->sched_info.delayedload_count, (long)(p->sched_info.delayedload / p->sched_info.delayedload_count), (long)p->se.sum_exec_runtime, (long)p->se.vruntime, (long)p->se.prev_sum_exec_runtime, (long)task_h_load(p), (long)p->se.load.weight, (long)p->se.avg.load_avg_contrib);
++            printk("Thread %s avgdelay %ld/%ld = %ld vruntime %ld %ld %ld load %ld %ld %ld\n", p->comm, (long)p->sched_info.delayedload, (long)p->sched_info.delayedload_count, (long)(p->sched_info.delayedload / p->sched_info.delayedload_count), (long)p->se.sum_exec_runtime, (long)p->se.vruntime, (long)p->se.prev_sum_exec_runtime, (long)task_h_load(p), (long)p->se.load.weight, (long)p->se.avg.load_avg);
 +      }
 +   } while_each_thread(g, p);
 +
@@ -355,9 +355,9 @@ index 9a5e60f..fa73f75 100644
 +
 +      list_for_each_entry_safe(p, n, &rq->cfs_tasks, se.group_node) {
 +         r->bug_report_size += sprintf(r->bug_report + r->bug_report_size,
-+               "#\tThread %s - avg_load_contrib %ld - final load %ld (weight %ld)\n",
++               "#\tThread %s - avg_load %ld - final load %ld (weight %ld)\n",
 +               p->comm,
-+               (long)p->se.avg.load_avg_contrib,
++               (long)p->se.avg.load_avg,
 +               (long)task_h_load(p),
 +               (long)p->se.load.weight);
 +      }
