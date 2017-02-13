@@ -20,9 +20,17 @@
 /* Constants                                                                  */
 /******************************************************************************/
 #define MAX_CPUS                                                              64
+
+#ifndef NUM_CPUS
 #define NUM_CPUS                                                              4
+#endif
+
 #define MAX_CLOCK_STR_LENGTH                                                  32
+
+#ifndef MAX_SAMPLE_ENTRIES
 #define MAX_SAMPLE_ENTRIES                                            100000000
+#endif
+
 #define INITIAL_CPU_ARRAY                                                      \
         { -1, -1, -1, -1, -1, -1, -1, -1,                                      \
           -1, -1, -1, -1, -1, -1, -1, -1,                                      \
