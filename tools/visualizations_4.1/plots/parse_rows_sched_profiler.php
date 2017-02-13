@@ -6,7 +6,7 @@ include "string_to_color.php";
 
 $n_hw_threads = 64;
 
-$line_width = 2;
+$line_width = 10;
 $line_sep = 0;
 $h_margin = 20;
 $v_margin_top = 40;
