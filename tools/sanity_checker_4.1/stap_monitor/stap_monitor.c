@@ -10,6 +10,39 @@
 #include <linux/hrtimer.h>
 #include <linux/slab.h>
 
+static inline unsigned long long __now(void) {
+#if defined(__x86_64__) || defined(__amd64__)
+	uint64_t cc;
+	rdtscll(cc);
+	return cc;
+#elif defined(__ARM_ARCH)
+  // V6 is the earliest arch that has a standard cyclecount
+  // Native Client validator doesn't allow MRC instructions.
+#if (__ARM_ARCH >= 6)
+	uint32_t pmccntr;
+	uint32_t pmcntenset;
+
+	static int init = 0;
+	if(!init) {
+		asm volatile("mcr p15, 0, %0, C9, C14, 2" :: "r"(0x8000000f)); //Disable Timer overrun Interrupt
+
+		asm volatile("mcr p15, 0, %0, c9, c12, 2" :: "r"(1<<31)); /* stop the cc */
+		asm volatile("mcr p15, 0, %0, c9, c12, 0" :: "r"(5));     /* initialize */
+		asm volatile("mcr p15, 0, %0, c9, c12, 1" :: "r"(1<<31)); /* start the cc */
+		init = 1;
+	}
+
+	asm volatile("mrc p15, 0, %0, c9, c12, 1" : "=r"(pmcntenset));
+	if (pmcntenset & 0x80000000ul) {  // Is it counting?
+		asm volatile("mrc p15, 0, %0, c9, c13, 0" : "=r"(pmccntr));
+		// The counter is set up to count every 64th cycle
+		return (u64)(pmccntr) * 64;  // Should optimize to << 6
+	}
+	return 0;
+#endif
+#endif
+}
+
 /*
  * Invariant module checker.
  *
@@ -73,28 +106,28 @@ void check_balancing_module(void) {
 
 
    // Check invariant 1: no idle cpu while another CPU is overloaded
-   rdtscll(start);
+   start = __now();
    memset(status, 0, sizeof(status));
    check_idle_overloaded(status);
-   rdtscll(stop);
+   stop = __now();
    change_cpus_status(0, status);
    printk("Invariant 1: %llu cycles\n", (long long unsigned)(stop - start));
 
    // check invariant 2: no deficit. Do that only every 500 calls!
    /*if(calls % 60 == 0) {
-      rdtscll(start);
+      start = __now();
       memset(status, 0, sizeof(status));
       check_deficit(status);
-      rdtscll(stop);
+      stop = __now();
       change_cpus_status(1, status);
       printk("Invariant 2: %llu cycles\n", (long long unsigned)(stop - start));
    }*/
 
    // check invariant 3: no useless migration
-   rdtscll(start);
+   start = __now();
    memset(status, 0, sizeof(status));
    check_useless_migrations(status);
-   rdtscll(stop);
+   stop = __now();
    printk("Invariant 3: %llu cycles\n", (long long unsigned)(stop - start));
    change_cpus_status(2, status);
 }
