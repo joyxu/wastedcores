@@ -1,0 +1,29 @@
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 208814c..f186a05 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -8682,6 +8682,9 @@ void check_deficit(buggy_state_t *buggy_cpus) {
+    int nb_buggy_threads = 0;
+    unsigned long now64;
+    unsigned long min_delay;
++#if defined(__ARM_ARCH)
++   unsigned long long tmpx;
++#endif
+ 
+    ktime_get_ts(&now);
+    now64 = now.tv_sec*ONE_SECOND + now.tv_nsec;
+@@ -8700,7 +8703,15 @@ void check_deficit(buggy_state_t *buggy_cpus) {
+ 
+    if(nb_threads)
+       average_delay = total_delay / nb_threads;
++#if defined(__x86_64__) || defined(__amd64__)
+    min_delay = 10000LU * (now64 - tick_time) / ONE_SECOND * MIN_BUGGY_DELAY / 10000LU;
++#elif defined(__ARM_ARCH)
++   tmpx = 10000LU * (now64 - tick_time);
++   do_div(tmpx, ONE_SECOND);
++   tmpx = tmpx * MIN_BUGGY_DELAY;
++   do_div(tmpx, 10000LU);
++   min_delay = tmpx;
++#endif
+    if(debug_invariants)
+       printk("Average delay %ld - min_delay %ld (MIN_BUGGY_DELAY %ld)\n", (long)average_delay, (long)min_delay, (long)MIN_BUGGY_DELAY);

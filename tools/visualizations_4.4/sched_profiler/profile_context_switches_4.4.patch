@@ -1,0 +1,27 @@
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 8cf1f26..4736f1c 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -90,6 +90,10 @@
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/sched.h>
+ 
++extern void sp_record_scheduling_event_extra(int event_type,
++                char data1, char data2, char data3, char data4,
++                char data5, char data6, char data7, char data8);
++
+ DEFINE_MUTEX(sched_domains_mutex);
+ DEFINE_PER_CPU_SHARED_ALIGNED(struct rq, runqueues);
+ 
+@@ -3363,6 +3367,11 @@ static void __sched notrace __schedule(bool preempt)
+ 		rq->curr = next;
+ 		++*switch_count;
+ 
++        uint32_t pid = (uint32_t)next->pid;
++        sp_record_scheduling_event_extra(231, (uint8_t)cpu, (uint8_t)((pid >> 24) & 0xff),
++                (uint8_t)((pid >> 16) & 0xff), (uint8_t)((pid >> 8) & 0xff),
++                (uint8_t)((pid >> 0) & 0xff), 0, 0, 0);
++
+ 		trace_sched_switch(preempt, prev, next);
+ 		rq = context_switch(rq, prev, next); /* unlocks the rq */
+ 		cpu = cpu_of(rq);

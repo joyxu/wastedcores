@@ -1,10 +1,10 @@
 #!/usr/bin/php
 <?php
 
-ini_set('memory_limit', '32G');
+ini_set('memory_limit', '2G');
 include "string_to_color.php";
 
-$n_hw_threads = 64;
+$n_hw_threads = 2;
 
 $line_width = 10;
 $line_sep = 0;
@@ -30,6 +30,7 @@ $metric = "standard";
 $monitored_event = -1;
 $core = -1;
 $show = "nothing";
+$pid = -1;
 
 // ^ Edit these variables
 
@@ -41,6 +42,7 @@ if ($argc > 6) $metric = $argv[6];
 if ($argc > 7) $monitored_event = $argv[7];
 if ($argc > 8) $core = $argv[8];
 if ($argc > 9) $show = $argv[9];
+if ($argc > 10) $pid = $argv[10];
 
 $reached_end = false;
 $resolution_s = $resolution / 1000000.0;
@@ -64,6 +66,7 @@ $green = imagecolorallocate($image, 0, 255, 0);
 $blue = imagecolorallocate($image, 0, 0, 255);
 $cyan = imagecolorallocate($image, 0, 255, 255);
 $magenta = imagecolorallocate($image, 255, 0, 255);
+$yellow = imagecolorallocate($image, 255, 255, 0);
 
 $background_color = $white;
 $text_color = $black;
@@ -111,13 +114,16 @@ while ($ts < $first_ts + $start_ts)
 }
 
 $affected_cores = array();
+$ctx_cores = array();
 
 $idle_balancing_events = array();
 $periodic_rebalancing_events = array();
 $wake_up_events = array();
 $bad_wakeup_marker_locations = array();
+$ctx_event = array();
 
 for ($z = 0; $z < 64; $z++) $affected_cores[$z] = false;
+for ($z = 0; $z < 64; $z++) $ctx_cores[$z] = false;
 
 for($cur_ts = $first_ts + $start_ts + $resolution_s, $i = 0;
     $cur_ts < $end_ts;
@@ -155,6 +161,19 @@ for($cur_ts = $first_ts + $start_ts + $resolution_s, $i = 0;
                     }
                 }
             }
+
+            if ($params[0] == "EX")
+            {
+                if ($params[1] == $monitored_event)
+                {
+                    $value = $params[2];
+
+                    $ctx_cores[$value] = true;
+                    $ctx_event = array("core" => $params[2],
+                        "pid"  => (($params[3]) << 24) + (($params[4]) << 16) + (($params[5]) << 8) + ($params[6]));
+                }
+            }
+
 
             if ($show == "arrows" || $show == "bad_wakeups")
             {
@@ -261,6 +280,14 @@ for($cur_ts = $first_ts + $start_ts + $resolution_s, $i = 0;
 
         if ($affected_cores[$hw_thread_id])
             $color = $highlight_color;
+
+        if ($ctx_cores[$hw_thread_id]){
+            if($ctx_event["pid"] == $pid){
+                $color = $highlight_color;
+            }else{
+                $color = $yellow;
+            }
+        }
 
         $x_origin = $h_margin + $i % $row_width;
         $y_origin = get_y_origin($hw_thread_id) + floor($i / $row_width)
@@ -415,9 +442,11 @@ for($cur_ts = $first_ts + $start_ts + $resolution_s, $i = 0;
                       $sep_color);
 
     for ($z = 0; $z < 64; $z++) $affected_cores[$z] = false;
+    for ($z = 0; $z < 64; $z++) $ctx_cores[$z] = false;
     $idle_balancing_events = array();
     $periodic_rebalancing_events = array();
     $wake_up_events = array();
+    $ctx_event = array();
 }
 
 script_end:
@@ -445,7 +474,7 @@ if ($reached_end)
     $execution_time = $ts - $first_ts - $start_ts;
 
     $y_origin = $v_tight_margin + $font_y_corr;
-    $str = sprintf("1 pixel = %.2fms, [%.2fs->%.2fs]",
+    $str = sprintf("1 pixel = %.3fms, [%.3fs->%.3fs]",
                    $resolution / 1000,
                    $start_ts,
                    $start_ts + $execution_time);
@@ -454,7 +483,7 @@ if ($reached_end)
 else
 {
     $y_origin = $v_tight_margin + $font_y_corr;
-    $str = sprintf("1 pixel = %.2fms, [%.2fs->%.2fs]",
+    $str = sprintf("1 pixel = %.3fms, [%.3fs->%.3fs]",
                    $resolution / 1000,
                    $start_ts,
                    $start_ts + $resolution * $max_n_samples / 1000000);
@@ -509,11 +538,11 @@ if ($adaptive_width)
     $fixed_image = imagecreatetruecolor($fixed_width, $height);
     imagecopyresized ($fixed_image, $image, 0, 0, 0, 0,
                       $width, $height, $width, $height);
-    imagepng($fixed_image, $output_file);
+    imagepng($fixed_image, $output_file, 0);
 }
 else
 {
-    imagepng($image, $output_file);
+    imagepng($image, $output_file, 0);
 }
 
 /******************************************************************************/

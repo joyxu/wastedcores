@@ -11,7 +11,6 @@
 #include <linux/sched.h>
 #include <linux/time.h>
 #include <linux/mm.h>
-#include <linux/vmalloc.h>
 
 #include <linux/spinlock_types.h>
 #include <linux/delay.h>
@@ -20,17 +19,9 @@
 /* Constants                                                                  */
 /******************************************************************************/
 #define MAX_CPUS                                                              64
-
-#ifndef NUM_CPUS
-#define NUM_CPUS                                                              4
-#endif
-
+#define NUM_CPUS                                                              64
 #define MAX_CLOCK_STR_LENGTH                                                  32
-
-#ifndef MAX_SAMPLE_ENTRIES
-#define MAX_SAMPLE_ENTRIES                                            100000000
-#endif
-
+#define MAX_SAMPLE_ENTRIES                                            1000000000
 #define INITIAL_CPU_ARRAY                                                      \
         { -1, -1, -1, -1, -1, -1, -1, -1,                                      \
           -1, -1, -1, -1, -1, -1, -1, -1,                                      \
